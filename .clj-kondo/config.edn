@@ -1,0 +1,52 @@
+{:linters
+ {:unresolved-var
+  {:exclude [(typed.clojure/ann)
+             (typed.clojure/defn)]}
+  :unresolved-symbol
+  {:exclude [(typed.clojure/ann)
+             (typed.clojure/defn)
+             ;; Type annotation symbols used in typed.clojure/ann forms
+             t/IFn
+             t/Any
+             t/Str
+             t/Keyword
+             t/Map
+             t/Seqable
+             t/Vec
+             t/Int
+             t/Num
+             t/Bool
+             t/Atom1
+             t/Ref1
+             t/Agent1
+             t/U
+             t/I
+             t/Val
+             t/Nothing
+             t/Coll
+             t/Seq
+             t/Set
+             t/Associative
+             t/Sequential
+             t/Indexed
+             t/Counted
+             t/ASeq
+             t/IPersistentCollection
+             t/IPersistentMap
+             t/IPersistentSet
+             t/IPersistentVector
+             t/Fn
+             t/Option
+             t/HMap
+             t/HVec
+             t/HSeq
+             t/HSet
+             ;; Commonly used type operators
+             t/->
+             t/:>
+             t/All]}}
+ :ignore-unresolved-symbols-from-vars
+ ['typed.clojure/ann
+  'typed.clojure/ann-many
+  'typed.clojure/ann-form
+  'typed.clojure/defalias]}

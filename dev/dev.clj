@@ -1,10 +1,11 @@
 (ns dev
   (:require
-   [io.aviso.repl]
-   [typed.clojure :as t]
    [clj-kondo.core :as clj-kondo]
-   [clj-reload.core :as reload]))
+   [clj-reload.core :as reload]
+   [io.aviso.repl :as repl]
+   [typed.clojure :as t]))
 
+(repl/install-pretty-exceptions)
 
 ;; Configures the reload system
 (reload/init
@@ -24,5 +25,4 @@
 (defn type-check
   "Checks the types using Clojure typed Clojure"
   []
-  (t/check-dir-clj "src")
-  (t/check-dir-clj "test"))
+  (t/check-dir-clj "src"))

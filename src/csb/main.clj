@@ -1,6 +1,7 @@
 (ns csb.main
-  (:require [typed.clojure :as t])
-  (:gen-class))
+  (:gen-class)
+  (:require
+   [typed.clojure :as t]))
 
 (defn -main [& args]
   (println "csb" args)

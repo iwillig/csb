@@ -1,7 +1,10 @@
 {:linters
  {:unresolved-var
-  {:exclude []}
-  :unresolved-symbol
-  {:exclude []}}
- :ignore-unresolved-symbols-from-vars
- []}
+  {:exclude [typed.clojure]}
+  :unused-import
+  {:level :off}
+  :unused-namespace
+  {:exclude [kaocha.repl]}}
+ :lint-as {typed.clojure/defalias clojure.core/def
+           typed.clojure/ann clojure.core/comment}
+ :skip-comments true}

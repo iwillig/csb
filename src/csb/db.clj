@@ -69,13 +69,16 @@
 (t/ann ^:no-check rollback-all
        [t/Any :-> nil])
 
+(t/ann ragtime.reporter/silent
+       [t/Any t/Any t/Any :-> nil])
+
 (defn migration-config
   "Given a SQLite Connection
    Returns a Ragtime migration config"
   [^SQLiteConnection connection]
   {:datastore  (ragtime-jdbc/sql-database connection)
    :migrations (ragtime-jdbc/load-resources "migrations")
-   ;; :reporter   ragtime.reporter/silent
+   :reporter   ragtime.reporter/silent
    :strategy   ragtime.strategy/apply-new})
 
 (defn memory-sqlite-database

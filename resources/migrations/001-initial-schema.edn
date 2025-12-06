@@ -29,7 +29,7 @@
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           description TEXT,
-          path TEXT NOT NULL,
+          path TEXT NOT NULL UNIQUE,
           created_at TEXT NOT NULL DEFAULT (datetime('now')),
           updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         )"
@@ -45,7 +45,7 @@
 
         "CREATE TABLE IF NOT EXISTS plan (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          project_id INTEGER REFERENCES project(id),
+          project_id INTEGER REFERENCES project(id) ON DELETE CASCADE,
           name TEXT NOT NULL,
           context TEXT NOT NULL,
           plan_state_id TEXT NOT NULL REFERENCES plan_state(id) DEFAULT 'created',

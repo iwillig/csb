@@ -1,11 +1,11 @@
 (ns dev
   (:require
-   [io.aviso.repl :as repl]
-   [typed.clojure :as t]
-   [csb.db :as db]
-   [kaocha.repl :as k]
    [clj-kondo.core :as clj-kondo]
-   [clj-reload.core :as reload]))
+   [clj-reload.core :as reload]
+   [csb.db :as db]
+   [io.aviso.repl :as repl]
+   [kaocha.repl :as k]
+   [typed.clojure :as t]))
 
 (comment
   (k/run-all))

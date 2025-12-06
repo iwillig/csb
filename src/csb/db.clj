@@ -1,8 +1,8 @@
 (ns csb.db
   "Namespace for the major DB databse"
   (:require
-   [next.jdbc :as jdbc]
    [honey.sql :as honey.sql]
+   [next.jdbc :as jdbc]
    [next.jdbc.result-set :as honey.rs]
    [ragtime.next-jdbc :as ragtime-jdbc]
    [ragtime.repl :as ragtime-repl]

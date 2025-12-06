@@ -14,6 +14,11 @@
   mvxcvi/puget {:mvn/version "1.3.4"}
   rewrite-clj/rewrite-clj {:mvn/version "1.2.50"}
 
+  http-kit/http-kit {:mvn/version "2.8.1"}
+  dev.data-star.clojure/sdk {:mvn/version "1.0.0-RC4"}
+  dev.data-star.clojure/http-kit {:mvn/version "1.0.0-RC4"}
+  dev.data-star.clojure/brotli {:mvn/version "1.0.0-RC4"}
+
   org.slf4j/slf4j-nop {:mvn/version "2.0.17"}
 
   ;; SQL database dependencies
@@ -33,6 +38,7 @@
                   com.stuartsierra/component.repl {:mvn/version "0.2.0"}
                   io.github.tonsky/clj-reload {:mvn/version "0.9.8"}
                   org.typedclojure/typed.clj.checker {:mvn/version "1.3.0"}
+                  etaoin/etaoin {:mvn/version "1.1.43"}
                   com.github.clojure-lsp/clojure-lsp {:mvn/version "2025.08.25-14.21.46"}
                   clj-kondo/clj-kondo {:mvn/version "2022.09.08"}
                   org.clojure/test.check {:mvn/version "1.1.1"}

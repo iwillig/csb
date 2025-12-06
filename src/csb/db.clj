@@ -2,6 +2,8 @@
   "Namespace for the major DB databse"
   (:require
    [next.jdbc :as jdbc]
+   [honey.sql :as honey.sql]
+   [next.jdbc.result-set :as honey.rs]
    [ragtime.next-jdbc :as ragtime-jdbc]
    [ragtime.repl :as ragtime-repl]
    [ragtime.reporter]
@@ -37,6 +39,16 @@
 
 (t/ann ^:no-check ragtime.repl/migration-index
        t/Any)
+
+;; Annotations for honey.sql and next.jdbc
+(t/ann ^:no-check honey.sql/format
+       [(t/Map t/Any t/Any) :-> (t/Vec t/Any)])
+
+(t/ann ^:no-check next.jdbc/execute!
+       [t/Any (t/Vec t/Any) :-> (t/Seqable t/Any)])
+
+(t/ann ^:no-check next.jdbc/execute-one!
+       [t/Any (t/Vec t/Any) :-> t/Any])
 
 ;; Type annotations for our functions
 (t/ann migration-config
@@ -90,3 +102,23 @@
   (let [migration-count (count @ragtime-repl/migration-index)]
     (dotimes [_ migration-count]
       (ragtime-repl/rollback config))))
+
+(t/ann ^:no-check execute-many
+       [SQLiteConnection t/Any :-> (t/Seqable t/Any)])
+
+(t/ann ^:no-check execute-one
+       [SQLiteConnection t/Any :-> t/Any])
+
+(defn execute-many
+  [^SQLiteConnection conn sql-map]
+  (jdbc/execute!
+   conn
+   (honey.sql/format sql-map)
+   {:builder-fn honey.rs/as-unqualified-maps}))
+
+(defn execute-one
+  [^SQLiteConnection conn sql-map]
+  (jdbc/execute-one!
+   conn
+   (honey.sql/format sql-map)
+   {:builder-fn honey.rs/as-unqualified-maps}))

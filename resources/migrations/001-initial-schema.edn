@@ -142,6 +142,63 @@
           PRIMARY KEY (plan_id, plan_skill_id)
         )"
 
+        "CREATE TABLE IF NOT EXISTS conversation (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+          name TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )"
+
+        "CREATE TABLE IF NOT EXISTS message (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          conversation_id INTEGER NOT NULL REFERENCES conversation(id) ON DELETE CASCADE,
+          role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
+          content TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )"
+
+        "CREATE TABLE IF NOT EXISTS plan_outcome (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          plan_id INTEGER NOT NULL REFERENCES plan(id) ON DELETE CASCADE,
+          outcome TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )"
+
+        ;; =====================================================
+        ;; Junction Tables for Conversation Relationships
+        ;; =====================================================
+
+        "CREATE TABLE IF NOT EXISTS conversation_skills (
+          conversation_id INTEGER NOT NULL REFERENCES conversation(id) ON DELETE CASCADE,
+          plan_skill_id INTEGER NOT NULL REFERENCES plan_skill(id) ON DELETE CASCADE,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (conversation_id, plan_skill_id)
+        )"
+
+        "CREATE TABLE IF NOT EXISTS conversation_plans (
+          conversation_id INTEGER NOT NULL REFERENCES conversation(id) ON DELETE CASCADE,
+          plan_id INTEGER NOT NULL REFERENCES plan(id) ON DELETE CASCADE,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (conversation_id, plan_id)
+        )"
+
+        "CREATE TABLE IF NOT EXISTS conversation_tasks (
+          conversation_id INTEGER NOT NULL REFERENCES conversation(id) ON DELETE CASCADE,
+          task_id INTEGER NOT NULL REFERENCES task(id) ON DELETE CASCADE,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (conversation_id, task_id)
+        )"
+
+        "CREATE TABLE IF NOT EXISTS conversation_file_changes (
+          conversation_id INTEGER NOT NULL REFERENCES conversation(id) ON DELETE CASCADE,
+          file_change_id INTEGER NOT NULL REFERENCES file_change(id) ON DELETE CASCADE,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (conversation_id, file_change_id)
+        )"
+
         ;; =====================================================
         ;; Indexes for Performance
         ;; =====================================================
@@ -162,6 +219,18 @@
         "CREATE INDEX IF NOT EXISTS idx_error_plan_id ON error(plan_id)"
         "CREATE INDEX IF NOT EXISTS idx_plan_skills_plan_id ON plan_skills(plan_id)"
         "CREATE INDEX IF NOT EXISTS idx_plan_skills_plan_skill_id ON plan_skills(plan_skill_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_project_id ON conversation(project_id)"
+        "CREATE INDEX IF NOT EXISTS idx_message_conversation_id ON message(conversation_id)"
+        "CREATE INDEX IF NOT EXISTS idx_message_role ON message(role)"
+        "CREATE INDEX IF NOT EXISTS idx_plan_outcome_plan_id ON plan_outcome(plan_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_skills_conversation_id ON conversation_skills(conversation_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_skills_plan_skill_id ON conversation_skills(plan_skill_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_plans_conversation_id ON conversation_plans(conversation_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_plans_plan_id ON conversation_plans(plan_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_tasks_conversation_id ON conversation_tasks(conversation_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_tasks_task_id ON conversation_tasks(task_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_file_changes_conversation_id ON conversation_file_changes(conversation_id)"
+        "CREATE INDEX IF NOT EXISTS idx_conversation_file_changes_file_change_id ON conversation_file_changes(file_change_id)"
 
         ;; =====================================================
         ;; Full-Text Search (FTS5) Tables
@@ -188,6 +257,12 @@
         "CREATE VIRTUAL TABLE IF NOT EXISTS error_fts USING fts5(
           message,
           content=error,
+          content_rowid=id
+        )"
+
+        "CREATE VIRTUAL TABLE IF NOT EXISTS message_fts USING fts5(
+          content,
+          content=message,
           content_rowid=id
         )"
 
@@ -251,6 +326,20 @@
           INSERT INTO error_fts(rowid, message) VALUES (new.id, new.message);
         END"
 
+        ;; Message FTS triggers
+        "CREATE TRIGGER IF NOT EXISTS message_fts_insert AFTER INSERT ON message BEGIN
+          INSERT INTO message_fts(rowid, content) VALUES (new.id, new.content);
+        END"
+
+        "CREATE TRIGGER IF NOT EXISTS message_fts_delete AFTER DELETE ON message BEGIN
+          INSERT INTO message_fts(message_fts, rowid, content) VALUES ('delete', old.id, old.content);
+        END"
+
+        "CREATE TRIGGER IF NOT EXISTS message_fts_update AFTER UPDATE ON message BEGIN
+          INSERT INTO message_fts(message_fts, rowid, content) VALUES ('delete', old.id, old.content);
+          INSERT INTO message_fts(rowid, content) VALUES (new.id, new.content);
+        END"
+
         ;; =====================================================
         ;; Update Timestamp Triggers
         ;; =====================================================
@@ -298,6 +387,18 @@
         "CREATE TRIGGER IF NOT EXISTS error_updated_at AFTER UPDATE ON error BEGIN
           UPDATE error SET updated_at = datetime('now') WHERE id = NEW.id;
         END"
+
+        "CREATE TRIGGER IF NOT EXISTS conversation_updated_at AFTER UPDATE ON conversation BEGIN
+          UPDATE conversation SET updated_at = datetime('now') WHERE id = NEW.id;
+        END"
+
+        "CREATE TRIGGER IF NOT EXISTS message_updated_at AFTER UPDATE ON message BEGIN
+          UPDATE message SET updated_at = datetime('now') WHERE id = NEW.id;
+        END"
+
+        "CREATE TRIGGER IF NOT EXISTS plan_outcome_updated_at AFTER UPDATE ON plan_outcome BEGIN
+          UPDATE plan_outcome SET updated_at = datetime('now') WHERE id = NEW.id;
+        END"
         ]
 
  :down [
@@ -313,6 +414,9 @@
          "DROP TRIGGER IF EXISTS file_change_ast_updated_at"
          "DROP TRIGGER IF EXISTS file_change_application_updated_at"
          "DROP TRIGGER IF EXISTS error_updated_at"
+         "DROP TRIGGER IF EXISTS conversation_updated_at"
+         "DROP TRIGGER IF EXISTS message_updated_at"
+         "DROP TRIGGER IF EXISTS plan_outcome_updated_at"
 
         "DROP TRIGGER IF EXISTS plan_fts_insert"
         "DROP TRIGGER IF EXISTS plan_fts_delete"
@@ -326,14 +430,25 @@
         "DROP TRIGGER IF EXISTS error_fts_insert"
         "DROP TRIGGER IF EXISTS error_fts_delete"
         "DROP TRIGGER IF EXISTS error_fts_update"
+        "DROP TRIGGER IF EXISTS message_fts_insert"
+        "DROP TRIGGER IF EXISTS message_fts_delete"
+        "DROP TRIGGER IF EXISTS message_fts_update"
 
         ;; Drop FTS tables
         "DROP TABLE IF EXISTS plan_fts"
         "DROP TABLE IF EXISTS task_fts"
         "DROP TABLE IF EXISTS plan_skill_fts"
         "DROP TABLE IF EXISTS error_fts"
+        "DROP TABLE IF EXISTS message_fts"
 
          ;; Drop regular tables (in reverse dependency order)
+         "DROP TABLE IF EXISTS conversation_file_changes"
+         "DROP TABLE IF EXISTS conversation_tasks"
+         "DROP TABLE IF EXISTS conversation_plans"
+         "DROP TABLE IF EXISTS conversation_skills"
+         "DROP TABLE IF EXISTS plan_outcome"
+         "DROP TABLE IF EXISTS message"
+         "DROP TABLE IF EXISTS conversation"
          "DROP TABLE IF EXISTS plan_skills"
          "DROP TABLE IF EXISTS error"
          "DROP TABLE IF EXISTS file_change_application"

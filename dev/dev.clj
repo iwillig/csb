@@ -27,7 +27,7 @@
   (-> (clj-kondo/run! {:lint ["src" "test" "dev"]})
       (clj-kondo/print!)))
 
-(def conn (db/file-sqlite-database "test.db"))
+(def conn (db/file-sqlite-database {:db_path "test.db"}))
 
 (defn migration
   "Migrates the test.db database"

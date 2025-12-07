@@ -1,6 +1,7 @@
 (ns csb.test-helpers
-  (:require [csb.db :as db])
-   (:import (org.sqlite SQLiteConnection)
+  (:require [csb.db :as db]
+            [csb.db.project :as db.project])
+  (:import (org.sqlite SQLiteConnection)
            (org.sqlite.core DB)))
 
 (def ^:dynamic *db* nil)
@@ -22,3 +23,20 @@
       (finally
         (db/rollback-all migration-config)
         (.close conn)))))
+
+;; ============================================================================
+;; Common Test Data Helpers
+;; ============================================================================
+
+(defn create-test-project
+  "Creates a test project using db.project/create-project.
+   Accepts optional name and path arguments.
+   If no path is provided, generates a unique path using a random UUID."
+  ([]
+   (create-test-project "Test Project" (str "/path/to/project/" (random-uuid))))
+  ([name path]
+   (db.project/create-project
+    *connection*
+    {:name name
+     :description "Test project description"
+     :path path})))

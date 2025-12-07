@@ -13,6 +13,28 @@ agents and the clojure programming language.
 - HTTP-Kit: HTTP Server
 - rewrite-clj: CLojure parser
 
+## Data model
+
+- project
+- conversation
+  AI conversation
+  skills: Skills references in the conversation
+  plans: Plans referenced in the conversation
+  tasks: Tasks referenced in the conversation
+  files-changes: File change suggestions in the conversation
+
+- message
+  role: enum user, assistant
+  content: string
+- skill
+
+- plan
+- task
+- plan outcome
+- file
+- file-change
+
+
 ## Core features
 
 Command line tool

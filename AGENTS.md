@@ -91,6 +91,7 @@ When working with this project, the agent should:
 5. **Leverage existing tooling**: Use the dev.clj functions for common operations
 6. **Maintain type safety**: Ensure code adheres to Typed Clojure specifications
 7. **Consider performance**: Be mindful of indexing and query optimization
+8. **Follow naming conventions**: Do not use `!` suffix in function names (this project does not follow the Clojure convention of using `!` for side-effecting functions)
 
 ## Available Commands
 

@@ -12,19 +12,6 @@
 ;; Test Data Helpers
 ;; ============================================================================
 
-(defn create-test-project!
-  "Creates a test project and returns it."
-  ([]
-   (create-test-project! "Test Project" "/path/to/project"))
-  ([name path]
-   (db/execute-one
-    test-helper/*connection*
-    {:insert-into :project
-     :values [{:name name
-               :description "Test project description"
-               :path path}]
-     :returning [:*]})))
-
 (defn get-plan-states
   "Returns all available plan states."
   []
@@ -62,7 +49,7 @@
 
 (t/deftest test-create-plan-with-project
   (t/testing "Creating a plan associated with a project"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           plan-data {:name "Project Plan"
                      :context "A plan for the project"
                      :project_id (:id project)}
@@ -83,7 +70,7 @@
 
 (t/deftest test-create-plan-with-all-fields
   (t/testing "Creating a plan with all optional fields"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           plan-data {:name "Complete Plan"
                      :context "Plan with all fields set"
                      :project_id (:id project)
@@ -119,7 +106,7 @@
 
 (t/deftest test-get-plans-by-project-id-empty
   (t/testing "Getting plans for a project with no plans"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           plans (db.plan/get-plans-by-project-id
                  test-helper/*connection*
                  (:id project))]
@@ -128,7 +115,7 @@
 
 (t/deftest test-get-plans-by-project-id-single
   (t/testing "Getting plans for a project with one plan"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           _ (db.plan/create-plan
              test-helper/*connection*
              {:name "Solo Plan"
@@ -143,7 +130,7 @@
 
 (t/deftest test-get-plans-by-project-id-multiple
   (t/testing "Getting plans for a project with multiple plans"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           _ (db.plan/create-plan
              test-helper/*connection*
              {:name "Plan 1"
@@ -221,8 +208,8 @@
 
 (t/deftest test-update-plan-project
   (t/testing "Updating a plan's project association"
-    (let [project1 (create-test-project! "Project 1" "/path/1")
-          project2 (create-test-project! "Project 2" "/path/2")
+    (let [project1 (test-helper/create-test-project "Project 1" "/path/1")
+          project2 (test-helper/create-test-project "Project 2" "/path/2")
           created-plan (db.plan/create-plan
                         test-helper/*connection*
                         {:name "Moving Plan"
@@ -238,7 +225,7 @@
 
 (t/deftest test-update-plan-multiple-fields
   (t/testing "Updating multiple fields at once"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           created-plan (db.plan/create-plan
                         test-helper/*connection*
                         {:name "Original"
@@ -395,7 +382,7 @@
 
 (t/deftest test-plan-lifecycle
   (t/testing "Complete plan lifecycle through states"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           ;; Create plan
           plan (db.plan/create-plan
                 test-helper/*connection*
@@ -435,7 +422,7 @@
 
 (t/deftest test-multiple-plans-same-project
   (t/testing "A project can have multiple plans"
-    (let [project (create-test-project!)
+    (let [project (test-helper/create-test-project)
           plan1 (db.plan/create-plan
                  test-helper/*connection*
                  {:name "Feature A"

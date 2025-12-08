@@ -83,7 +83,7 @@
 
    Returns the complete Skill record with generated ID and timestamps."
   [conn skill-data]
-  (let [sql-map {:insert-into :skill
+  (let [sql-map {:insert-into :plan_skill
                  :values [skill-data]
                  :returning [:*]}]
     (db/execute-one conn sql-map)))
@@ -94,7 +94,7 @@
    Returns the Skill record if found, nil otherwise."
   [conn skill-id]
   (let [sql-map {:select [:*]
-                 :from [:skill]
+                 :from [:plan_skill]
                  :where [:= :id skill-id]}]
     (db/execute-one conn sql-map)))
 
@@ -104,7 +104,7 @@
    Returns the Skill record if found, nil otherwise."
   [conn skill-name]
   (let [sql-map {:select [:*]
-                 :from [:skill]
+                 :from [:plan_skill]
                  :where [:= :name skill-name]}]
     (db/execute-one conn sql-map)))
 
@@ -114,7 +114,7 @@
    Returns a sequence of Skill records ordered by name."
   [conn]
   (let [sql-map {:select [:*]
-                 :from [:skill]
+                 :from [:plan_skill]
                  :order-by [[:name :asc]]}]
     (db/execute-many conn sql-map)))
 
@@ -128,7 +128,7 @@
 
    Returns the updated Skill record with new timestamp."
   [conn skill-id skill-data]
-  (let [sql-map {:update :skill
+  (let [sql-map {:update :plan_skill
                  :set skill-data
                  :where [:= :id skill-id]
                  :returning [:*]}]
@@ -139,6 +139,6 @@
 
    Returns the number of rows deleted (0 or 1)."
   [conn skill-id]
-  (let [sql-map {:delete-from :skill
+  (let [sql-map {:delete-from :plan_skill
                  :where [:= :id skill-id]}]
     (db/execute-one conn sql-map)))

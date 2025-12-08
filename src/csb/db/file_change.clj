@@ -2,8 +2,6 @@
   "Database operations for file change entities"
   (:require
    [csb.db :as db]
-   [next.jdbc :as jdbc]
-   [next.jdbc.result-set :as rs]
    [typed.clojure :as t])
   (:import
    (org.sqlite

@@ -14,26 +14,24 @@
 
 (t/deftest test-create-conversation-with-required-fields
   (t/testing "Creating a conversation with only required fields"
-    (let [project (test-helper/create-test-project)
-          conversation-data {:project_id (:id project)}
-          created-conversation (db.conversation/create-conversation
-                                test-helper/*connection*
-                                conversation-data)]
-
-      ;; Verify conversation was created with ID
-      (t/is (integer? (:id created-conversation)))
-      (t/is (pos? (:id created-conversation)))
-
-      ;; Verify required fields
-      (t/is (= (:id project) (:project_id created-conversation)))
-
-      ;; Verify optional field is nil
-      (t/is (nil? (:name created-conversation)))
-
-      ;; Verify timestamps
-      (t/is (string? (:created_at created-conversation)))
-      (t/is (string? (:updated_at created-conversation)))
-      (t/is (= (:created_at created-conversation) (:updated_at created-conversation))))))
+    (t/testing "Given a project and conversation data with required fields"
+      (let [project (test-helper/create-test-project)
+            conversation-data {:project_id (:id project)}
+            created-conversation (db.conversation/create-conversation
+                                  test-helper/*connection*
+                                  conversation-data)]
+        (t/testing "When the conversation is created"
+          (t/testing "Then it should be created with an ID"
+            (t/is (integer? (:id created-conversation)))
+            (t/is (pos? (:id created-conversation))))
+          (t/testing "Then the required fields should be set correctly"
+            (t/is (= (:id project) (:project_id created-conversation))))
+          (t/testing "Then optional fields should be nil"
+            (t/is (nil? (:name created-conversation))))
+          (t/testing "Then timestamps should be set correctly"
+            (t/is (string? (:created_at created-conversation)))
+            (t/is (string? (:updated_at created-conversation)))
+            (t/is (= (:created_at created-conversation) (:updated_at created-conversation)))))))))
 
 (t/deftest test-create-conversation-with-name
   (t/testing "Creating a conversation with a name"
@@ -49,18 +47,22 @@
 
 (t/deftest test-get-conversation-by-id-exists
   (t/testing "Retrieving an existing conversation by ID"
-    (let [project (test-helper/create-test-project)
-          created-conversation (db.conversation/create-conversation
-                                test-helper/*connection*
-                                {:project_id (:id project)
-                                 :name "Find Me"})
-          retrieved-conversation (db.conversation/get-conversation-by-id
+    (t/testing "Given an existing conversation"
+      (let [project (test-helper/create-test-project)
+            created-conversation (db.conversation/create-conversation
                                   test-helper/*connection*
-                                  (:id created-conversation))]
-
-      (t/is (not (nil? retrieved-conversation)))
-      (t/is (= (:id created-conversation) (:id retrieved-conversation)))
-      (t/is (= "Find Me" (:name retrieved-conversation))))))
+                                  {:project_id (:id project)
+                                   :name "Find Me"})
+            retrieved-conversation (db.conversation/get-conversation-by-id
+                                    test-helper/*connection*
+                                    (:id created-conversation))]
+        (t/testing "When retrieving the conversation by ID"
+          (t/testing "Then it should return the conversation"
+            (t/is (not (nil? retrieved-conversation))))
+          (t/testing "Then the retrieved conversation should have the correct ID"
+            (t/is (= (:id created-conversation) (:id retrieved-conversation))))
+          (t/testing "Then the retrieved conversation should have the correct name"
+            (t/is (= "Find Me" (:name retrieved-conversation)))))))))
 
 (t/deftest test-get-conversation-by-id-not-exists
   (t/testing "Retrieving a non-existent conversation returns nil"

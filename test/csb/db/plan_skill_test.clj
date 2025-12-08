@@ -14,25 +14,23 @@
 
 (t/deftest test-create-plan-skill-with-required-fields
   (t/testing "Creating a plan skill with only required fields"
-    (let [skill-data {:name "HTTP Servers"
-                      :content "Guide to HTTP server libraries in Clojure"}
-          created-skill (db.plan-skill/create-plan-skill test-helper/*connection* skill-data)]
-
-      ;; Verify skill was created with ID
-      (t/is (integer? (:id created-skill)))
-      (t/is (pos? (:id created-skill)))
-
-      ;; Verify required fields
-      (t/is (= "HTTP Servers" (:name created-skill)))
-      (t/is (= "Guide to HTTP server libraries in Clojure" (:content created-skill)))
-
-      ;; Verify optional field is nil
-      (t/is (nil? (:description created-skill)))
-
-      ;; Verify timestamps
-      (t/is (string? (:created_at created-skill)))
-      (t/is (string? (:updated_at created-skill)))
-      (t/is (= (:created_at created-skill) (:updated_at created-skill))))))
+    (t/testing "Given skill data with required fields"
+      (let [skill-data {:name "HTTP Servers"
+                        :content "Guide to HTTP server libraries in Clojure"}
+            created-skill (db.plan-skill/create-plan-skill test-helper/*connection* skill-data)]
+        (t/testing "When the plan skill is created"
+          (t/testing "Then it should be created with an ID"
+            (t/is (integer? (:id created-skill)))
+            (t/is (pos? (:id created-skill))))
+          (t/testing "Then the required fields should be set correctly"
+            (t/is (= "HTTP Servers" (:name created-skill)))
+            (t/is (= "Guide to HTTP server libraries in Clojure" (:content created-skill))))
+          (t/testing "Then optional fields should be nil"
+            (t/is (nil? (:description created-skill))))
+          (t/testing "Then timestamps should be set correctly"
+            (t/is (string? (:created_at created-skill)))
+            (t/is (string? (:updated_at created-skill)))
+            (t/is (= (:created_at created-skill) (:updated_at created-skill)))))))))
 
 (t/deftest test-create-plan-skill-with-description
   (t/testing "Creating a plan skill with description"
@@ -47,18 +45,23 @@
 
 (t/deftest test-get-plan-skill-by-id-exists
   (t/testing "Retrieving an existing plan skill by ID"
-    (let [created-skill (db.plan-skill/create-plan-skill
-                         test-helper/*connection*
-                         {:name "Testing"
-                          :content "How to test Clojure applications"})
-          retrieved-skill (db.plan-skill/get-plan-skill-by-id
+    (t/testing "Given an existing plan skill"
+      (let [created-skill (db.plan-skill/create-plan-skill
                            test-helper/*connection*
-                           (:id created-skill))]
-
-      (t/is (not (nil? retrieved-skill)))
-      (t/is (= (:id created-skill) (:id retrieved-skill)))
-      (t/is (= "Testing" (:name retrieved-skill)))
-      (t/is (= "How to test Clojure applications" (:content retrieved-skill))))))
+                           {:name "Testing"
+                            :content "How to test Clojure applications"})
+            retrieved-skill (db.plan-skill/get-plan-skill-by-id
+                             test-helper/*connection*
+                             (:id created-skill))]
+        (t/testing "When retrieving the plan skill by ID"
+          (t/testing "Then it should return the plan skill"
+            (t/is (not (nil? retrieved-skill))))
+          (t/testing "Then the retrieved plan skill should have the correct ID"
+            (t/is (= (:id created-skill) (:id retrieved-skill))))
+          (t/testing "Then the retrieved plan skill should have the correct name"
+            (t/is (= "Testing" (:name retrieved-skill))))
+          (t/testing "Then the retrieved plan skill should have the correct content"
+            (t/is (= "How to test Clojure applications" (:content retrieved-skill)))))))))
 
 (t/deftest test-get-plan-skill-by-id-not-exists
   (t/testing "Retrieving a non-existent plan skill returns nil"

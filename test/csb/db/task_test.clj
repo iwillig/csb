@@ -485,7 +485,7 @@
                          :name "Grandchild 2"
                          :context "Level 2"
                          :parent_id (:id child2)})
-          
+
           ;; Verify hierarchy
           root-tasks (db.task/get-root-tasks test-helper/*connection* (:id plan))
           level1-children (db.task/get-child-tasks test-helper/*connection* (:id root))
@@ -495,11 +495,11 @@
       ;; Verify root level
       (t/is (= 1 (count root-tasks)))
       (t/is (= "Root Task" (:name (first root-tasks))))
-      
+
       ;; Verify level 1
       (t/is (= 2 (count level1-children)))
       (t/is (= #{"Child 1" "Child 2"} (set (map :name level1-children))))
-      
+
       ;; Verify level 2
       (t/is (= 1 (count child1-children)))
       (t/is (= "Grandchild 1" (:name (first child1-children))))

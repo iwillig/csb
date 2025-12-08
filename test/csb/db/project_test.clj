@@ -15,25 +15,23 @@
 
 (t/deftest test-create-project-with-required-fields
   (t/testing "Creating a project with only required fields"
-    (let [project-data {:name "My Project"
-                        :path "/home/user/my-project"}
-          created-project (db.project/create-project test-helper/*connection* project-data)]
-      
-      ;; Verify project was created with ID
-      (t/is (integer? (:id created-project)))
-      (t/is (pos? (:id created-project)))
-      
-      ;; Verify required fields
-      (t/is (= "My Project" (:name created-project)))
-      (t/is (= "/home/user/my-project" (:path created-project)))
-      
-      ;; Verify optional fields are nil
-      (t/is (nil? (:description created-project)))
-      
-      ;; Verify timestamps
-      (t/is (string? (:created_at created-project)))
-      (t/is (string? (:updated_at created-project)))
-      (t/is (= (:created_at created-project) (:updated_at created-project))))))
+    (t/testing "Given a project with only required fields"
+      (let [project-data {:name "My Project"
+                          :path "/home/user/my-project"}
+            created-project (db.project/create-project test-helper/*connection* project-data)]
+        (t/testing "When the project is created"
+          (t/testing "Then it should be created with an ID"
+            (t/is (integer? (:id created-project)))
+            (t/is (pos? (:id created-project))))
+          (t/testing "Then the required fields should be set correctly"
+            (t/is (= "My Project" (:name created-project)))
+            (t/is (= "/home/user/my-project" (:path created-project))))
+          (t/testing "Then optional fields should be nil"
+            (t/is (nil? (:description created-project))))
+          (t/testing "Then timestamps should be set correctly"
+            (t/is (string? (:created_at created-project)))
+            (t/is (string? (:updated_at created-project)))
+            (t/is (= (:created_at created-project) (:updated_at created-project)))))))))
 
 (t/deftest test-create-project-with-description
   (t/testing "Creating a project with a description"
@@ -59,18 +57,23 @@
 
 (t/deftest test-get-project-by-id-exists
   (t/testing "Retrieving an existing project by ID"
-    (let [created-project (db.project/create-project
-                           test-helper/*connection*
-                           {:name "Find Me"
-                            :path "/findable/project"})
-          retrieved-project (db.project/get-project-by-id
+    (t/testing "Given an existing project"
+      (let [created-project (db.project/create-project
                              test-helper/*connection*
-                             (:id created-project))]
-      
-      (t/is (not (nil? retrieved-project)))
-      (t/is (= (:id created-project) (:id retrieved-project)))
-      (t/is (= "Find Me" (:name retrieved-project)))
-      (t/is (= "/findable/project" (:path retrieved-project))))))
+                             {:name "Find Me"
+                              :path "/findable/project"})
+            retrieved-project (db.project/get-project-by-id
+                               test-helper/*connection*
+                               (:id created-project))]
+        (t/testing "When retrieving the project by ID"
+          (t/testing "Then it should return the project"
+            (t/is (not (nil? retrieved-project))))
+          (t/testing "Then the retrieved project should have the correct ID"
+            (t/is (= (:id created-project) (:id retrieved-project))))
+          (t/testing "Then the retrieved project should have the correct name"
+            (t/is (= "Find Me" (:name retrieved-project))))
+          (t/testing "Then the retrieved project should have the correct path"
+            (t/is (= "/findable/project" (:path retrieved-project)))))))))
 
 (t/deftest test-get-project-by-id-not-exists
   (t/testing "Retrieving a non-existent project returns nil"

@@ -113,10 +113,10 @@
       (ragtime-repl/rollback config))))
 
 (t/ann ^:no-check execute-many
-        (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Seqable a)]))
+       (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Seqable a)]))
 
 (t/ann ^:no-check execute-one
-        (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Option a)]))
+       (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Option a)]))
 
 (defn execute-many
   [^SQLiteConnection conn sql-map]

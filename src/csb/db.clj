@@ -45,10 +45,16 @@
        [(t/Map t/Any t/Any) :-> (t/Vec t/Any)])
 
 (t/ann ^:no-check next.jdbc/execute!
-       [t/Any (t/Vec t/Any) :-> (t/Seqable t/Any)])
+       (t/IFn [t/Any (t/Vec t/Any) :-> (t/Seqable t/Any)]
+              [t/Any (t/Vec t/Any) t/Any :-> (t/Seqable t/Any)]))
 
 (t/ann ^:no-check next.jdbc/execute-one!
-       [t/Any (t/Vec t/Any) :-> t/Any])
+       (t/IFn [t/Any (t/Vec t/Any) :-> t/Any]
+              [t/Any (t/Vec t/Any) t/Any :-> t/Any]))
+
+;; Annotation for result-set builder function
+(t/ann ^:no-check next.jdbc.result-set/as-unqualified-maps
+       t/Any)
 
 ;; Type annotations for our functions
 (t/ann migration-config
@@ -107,10 +113,10 @@
       (ragtime-repl/rollback config))))
 
 (t/ann ^:no-check execute-many
-       [SQLiteConnection t/Any :-> (t/Seqable t/Any)])
+        (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Seqable a)]))
 
 (t/ann ^:no-check execute-one
-       [SQLiteConnection t/Any :-> t/Any])
+        (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Option a)]))
 
 (defn execute-many
   [^SQLiteConnection conn sql-map]

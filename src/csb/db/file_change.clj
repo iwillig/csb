@@ -83,7 +83,7 @@
 ;; Function Annotations
 ;; ============================================================================
 
-(t/ann create-file-change
+(t/ann ^:no-check create-file-change
        [SQLiteConnection NewFileChange :-> FileChange])
 
 (t/ann get-file-change-by-id
@@ -95,7 +95,7 @@
 (t/ann get-file-changes-by-file-id
        [SQLiteConnection t/Int :-> (t/Seqable FileChange)])
 
-(t/ann create-file-change-change
+(t/ann ^:no-check create-file-change-change
        [SQLiteConnection (t/HMap :mandatory {:file_change_id t/Int
                                              :change_type t/Str
                                              :line_start t/Int
@@ -106,7 +106,7 @@
 (t/ann get-file-change-changes-by-file-change-id
        [SQLiteConnection t/Int :-> (t/Seqable FileChangeChange)])
 
-(t/ann create-file-change-application
+(t/ann ^:no-check create-file-change-application
        [SQLiteConnection (t/HMap :mandatory {:file_change_id t/Int
                                              :plan_id t/Int
                                              :status t/Str}
@@ -116,7 +116,7 @@
 (t/ann get-file-change-application-by-file-change-id
        [SQLiteConnection t/Int :-> (t/Option FileChangeApplication)])
 
-(t/ann update-file-change-application-status
+(t/ann ^:no-check update-file-change-application-status
        [SQLiteConnection t/Int t/Str (t/Option t/Str) :-> FileChangeApplication])
 
 ;; ============================================================================

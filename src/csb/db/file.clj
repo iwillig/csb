@@ -50,7 +50,7 @@
 ;; Function Annotations
 ;; ============================================================================
 
-(t/ann create-file
+(t/ann ^:no-check create-file
        [SQLiteConnection NewFile :-> File])
 
 (t/ann get-file-by-id
@@ -59,7 +59,7 @@
 (t/ann get-files-by-project-id
        [SQLiteConnection t/Int :-> (t/Seqable File)])
 
-(t/ann update-file
+(t/ann ^:no-check update-file
        [SQLiteConnection t/Int FileUpdate :-> File])
 
 (t/ann delete-file

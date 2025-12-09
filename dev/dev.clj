@@ -2,12 +2,16 @@
   (:require
    [clj-kondo.core :as clj-kondo]
    [clj-reload.core :as reload]
+   [clojure.repl :refer [doc]]
    [csb.db :as db]
    [io.aviso.repl :as repl]
    [kaocha.repl :as k]
    [typed.clojure :as t]))
 
+
 (comment
+  (doc k/run)
+  (doc k/run-all)
   (k/run-all))
 
 (repl/install-pretty-exceptions)
@@ -40,3 +44,8 @@
   "Checks the types using Clojure typed Clojure"
   []
   (t/check-dir-clj "src"))
+
+(println (doc k/run))
+(println (doc refresh))
+(println (doc lint))
+(println (doc type-check))

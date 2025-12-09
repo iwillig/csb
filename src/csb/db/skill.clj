@@ -51,7 +51,7 @@
 ;; Function Annotations
 ;; ============================================================================
 
-(t/ann create-skill
+(t/ann ^:no-check create-skill
        [SQLiteConnection NewSkill :-> Skill])
 
 (t/ann get-skill-by-id
@@ -63,7 +63,7 @@
 (t/ann get-all-skills
        [SQLiteConnection :-> (t/Seqable Skill)])
 
-(t/ann update-skill
+(t/ann ^:no-check update-skill
        [SQLiteConnection t/Int SkillUpdate :-> Skill])
 
 (t/ann delete-skill

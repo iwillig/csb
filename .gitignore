@@ -1,3 +1,6 @@
 /junit.xml
 /.clj-kondo/
 /opt/
+/.nrepl-port
+/.lsp/
+/.cpcache/

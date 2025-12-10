@@ -5,7 +5,8 @@
    [csb.test-helpers :as test-helper]
    [csb.db :as db]
    [csb.db.project :as db.project]
-   [csb.db.plan :as db.plan]))
+   [csb.db.plan :as db.plan]
+   [failjure.core :as f]))
 
 (t/use-fixtures :each test-helper/use-sqlite-database)
 
@@ -265,11 +266,12 @@
      {:name "First Project"
       :path "/shared/path"})
     
-    (t/is (thrown? org.sqlite.SQLiteException
-                   (db.project/create-project
-                    test-helper/*connection*
-                    {:name "Second Project"
-                     :path "/shared/path"})))))
+    (let [result (db.project/create-project
+                  test-helper/*connection*
+                  {:name "Second Project"
+                   :path "/shared/path"})]
+      (t/is (f/failed? result))
+      (t/is (re-find #"UNIQUE constraint failed" (f/message result))))))
 
 (t/deftest test-update-to-duplicate-path-fails
   (t/testing "Cannot update a project to have the same path as another"
@@ -280,13 +282,14 @@
           _p2 (db.project/create-project
                test-helper/*connection*
                {:name "Project 2"
-                :path "/path2"})]
+                :path "/path2"})
+          result (db.project/update-project
+                  test-helper/*connection*
+                  (:id p1)
+                  {:path "/path2"})]
       
-      (t/is (thrown? org.sqlite.SQLiteException
-                     (db.project/update-project
-                      test-helper/*connection*
-                      (:id p1)
-                      {:path "/path2"}))))))
+      (t/is (f/failed? result))
+      (t/is (re-find #"UNIQUE constraint failed" (f/message result))))))
 
 ;; ============================================================================
 ;; Cascade Delete Tests

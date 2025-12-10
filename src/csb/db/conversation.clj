@@ -1,7 +1,11 @@
 (ns csb.db.conversation
-  "Database operations for conversation entities"
+  "Database operations for conversation entities.
+   
+   All operations return Result<T> for Railway-Oriented error handling.
+   Failures propagate automatically through attempt-all pipelines."
   (:require
    [csb.db :as db]
+   [csb.db.types :as types]
    [typed.clojure :as t])
   (:import
    (org.sqlite
@@ -14,11 +18,11 @@
 (t/defalias NewConversation
   "Data required to create a new conversation.
 
-  Required fields:
-  - :project_id - ID of the associated project (Integer)
+   Required fields:
+   - :project_id - ID of the associated project (Integer)
 
-  Optional fields:
-  - :name - Name/title of the conversation (String or nil)"
+   Optional fields:
+   - :name - Name/title of the conversation (String or nil)"
   (t/HMap :mandatory {:project_id t/Int}
           :optional {:name (t/Option t/Str)}))
 
@@ -30,12 +34,12 @@
 (t/defalias Conversation
   "Complete conversation record as returned from database.
 
-  Fields:
-  - :id - Unique identifier (Integer)
-  - :project_id - Associated project ID (Integer)
-  - :name - Conversation name (String or nil)
-  - :created_at - Creation timestamp (String)
-  - :updated_at - Last update timestamp (String)"
+   Fields:
+   - :id - Unique identifier (Integer)
+   - :project_id - Associated project ID (Integer)
+   - :name - Conversation name (String or nil)
+   - :created_at - Creation timestamp (String)
+   - :updated_at - Last update timestamp (String)"
   (t/HMap :mandatory {:id t/Int
                       :project_id t/Int
                       :created_at t/Str
@@ -47,22 +51,22 @@
 ;; ============================================================================
 
 (t/ann ^:no-check create-conversation
-       [SQLiteConnection NewConversation :-> Conversation])
+       [SQLiteConnection NewConversation :-> (types/Result Conversation)])
 
 (t/ann ^:no-check get-conversation-by-id
-       [SQLiteConnection t/Int :-> (t/Option Conversation)])
+       [SQLiteConnection t/Int :-> (types/Result (t/Option Conversation))])
 
 (t/ann ^:no-check get-conversations-by-project-id
-       [SQLiteConnection t/Int :-> (t/Seqable Conversation)])
+       [SQLiteConnection t/Int :-> (types/Result (t/Seqable Conversation))])
 
 (t/ann ^:no-check get-all-conversations
-       [SQLiteConnection :-> (t/Seqable Conversation)])
+       [SQLiteConnection :-> (types/Result (t/Seqable Conversation))])
 
 (t/ann ^:no-check update-conversation
-       [SQLiteConnection t/Int ConversationUpdate :-> Conversation])
+       [SQLiteConnection t/Int ConversationUpdate :-> (types/Result Conversation)])
 
 (t/ann ^:no-check delete-conversation
-       [SQLiteConnection t/Int :-> t/Any])
+       [SQLiteConnection t/Int :-> (types/Result t/Any)])
 
 ;; ============================================================================
 ;; CRUD Operations
@@ -71,70 +75,64 @@
 (defn create-conversation
   "Creates a new conversation and returns the created conversation with its ID.
 
-  The conversation-data map should contain:
-  - :project_id (required) - Associated project ID
-  - :name (optional) - Conversation name/title
+   The conversation-data map should contain:
+   - :project_id (required) - Associated project ID
+   - :name (optional) - Conversation name/title
 
-  Returns the complete Conversation record with generated ID and timestamps."
+   Returns Result<Conversation> - the created record or Failure on database error."
   [conn conversation-data]
-  (let [sql-map {:insert-into :conversation
-                 :values [conversation-data]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:insert-into :conversation
+                        :values [conversation-data]
+                        :returning [:*]}))
 
 (defn get-conversation-by-id
   "Retrieves a conversation by its ID.
 
-  Returns the Conversation record if found, nil otherwise."
+   Returns Result<Conversation | nil> - the record, nil if not found, or Failure."
   [conn conversation-id]
-  (let [sql-map {:select [:*]
-                 :from [:conversation]
-                 :where [:= :id conversation-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:select [:*]
+                        :from [:conversation]
+                        :where [:= :id conversation-id]}))
 
 (defn get-conversations-by-project-id
   "Retrieves all conversations associated with a project.
 
-  Returns a sequence of Conversation records ordered by creation time."
+   Returns Result<Seq<Conversation>> - sequence of records or Failure."
   [conn project-id]
-  (let [sql-map {:select [:*]
-                 :from [:conversation]
-                 :where [:= :project_id project-id]
-                 :order-by [[:created_at :desc]]}]
-    (db/execute-many conn sql-map)))
+  (db/execute-many conn {:select [:*]
+                         :from [:conversation]
+                         :where [:= :project_id project-id]
+                         :order-by [[:created_at :desc]]}))
 
 (defn get-all-conversations
   "Retrieves all conversations.
 
-  Returns a sequence of Conversation records ordered by creation time (newest first)."
+   Returns Result<Seq<Conversation>> - sequence of records or Failure."
   [conn]
-  (let [sql-map {:select [:*]
-                 :from [:conversation]
-                 :order-by [[:created_at :desc]]}]
-    (db/execute-many conn sql-map)))
+  (db/execute-many conn {:select [:*]
+                         :from [:conversation]
+                         :order-by [[:created_at :desc]]}))
 
 (defn update-conversation
   "Updates an existing conversation and returns the updated record.
 
-  The conversation-data map can contain any of:
-  - :name - New conversation name
-  - :project_id - New project association
+   The conversation-data map can contain any of:
+   - :name - New conversation name
+   - :project_id - New project association
 
-  Returns the updated Conversation record with new timestamp."
+   Returns Result<Conversation> - the updated record or Failure."
   [conn conversation-id conversation-data]
-  (let [sql-map {:update :conversation
-                 :set conversation-data
-                 :where [:= :id conversation-id]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:update :conversation
+                        :set conversation-data
+                        :where [:= :id conversation-id]
+                        :returning [:*]}))
 
 (defn delete-conversation
   "Deletes a conversation by its ID.
 
-  Note: This will cascade delete all associated messages.
+   Note: This will cascade delete all associated messages.
 
-  Returns the number of rows deleted (0 or 1)."
+   Returns Result<{:next.jdbc/update-count n}> - update count or Failure."
   [conn conversation-id]
-  (let [sql-map {:delete-from :conversation
-                 :where [:= :id conversation-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:delete-from :conversation
+                        :where [:= :id conversation-id]}))

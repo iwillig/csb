@@ -1,7 +1,11 @@
 (ns csb.db.file
-  "Database operations for file entities"
+  "Database operations for file entities.
+   
+   All operations return Result<T> for Railway-Oriented error handling.
+   Failures propagate automatically through attempt-all pipelines."
   (:require
    [csb.db :as db]
+   [csb.db.types :as types]
    [typed.clojure :as t])
   (:import
    (org.sqlite
@@ -51,19 +55,19 @@
 ;; ============================================================================
 
 (t/ann ^:no-check create-file
-       [SQLiteConnection NewFile :-> File])
+       [SQLiteConnection NewFile :-> (types/Result File)])
 
-(t/ann get-file-by-id
-       [SQLiteConnection t/Int :-> (t/Option File)])
+(t/ann ^:no-check get-file-by-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Option File))])
 
-(t/ann get-files-by-project-id
-       [SQLiteConnection t/Int :-> (t/Seqable File)])
+(t/ann ^:no-check get-files-by-project-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Seqable File))])
 
 (t/ann ^:no-check update-file
-       [SQLiteConnection t/Int FileUpdate :-> File])
+       [SQLiteConnection t/Int FileUpdate :-> (types/Result File)])
 
-(t/ann delete-file
-       [SQLiteConnection t/Int :-> t/Any])
+(t/ann ^:no-check delete-file
+       [SQLiteConnection t/Int :-> (types/Result t/Any)])
 
 ;; ============================================================================
 ;; CRUD Operations
@@ -77,33 +81,30 @@
    - :path (required) - File path within the project
    - :summary (optional) - Summary of the file's content
 
-   Returns the complete File record with generated ID and timestamps."
+   Returns Result<File> - the created record or Failure on database error."
   [conn file-data]
-  (let [sql-map {:insert-into :file
-                 :values [file-data]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:insert-into :file
+                        :values [file-data]
+                        :returning [:*]}))
 
 (defn get-file-by-id
   "Retrieves a file by its ID.
 
-   Returns the File record if found, nil otherwise."
+   Returns Result<File | nil> - the record, nil if not found, or Failure."
   [conn file-id]
-  (let [sql-map {:select [:*]
-                 :from [:file]
-                 :where [:= :id file-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:select [:*]
+                        :from [:file]
+                        :where [:= :id file-id]}))
 
 (defn get-files-by-project-id
   "Retrieves all files associated with a project.
 
-   Returns a sequence of File records ordered by path."
+   Returns Result<Seq<File>> - sequence of records or Failure."
   [conn project-id]
-  (let [sql-map {:select [:*]
-                 :from [:file]
-                 :where [:= :project_id project-id]
-                 :order-by [[:path :asc]]}]
-    (db/execute-many conn sql-map)))
+  (db/execute-many conn {:select [:*]
+                         :from [:file]
+                         :where [:= :project_id project-id]
+                         :order-by [[:path :asc]]}))
 
 (defn update-file
   "Updates an existing file and returns the updated record.
@@ -112,19 +113,17 @@
    - :path - New file path
    - :summary - New summary
 
-   Returns the updated File record with new timestamp."
+   Returns Result<File> - the updated record or Failure."
   [conn file-id file-data]
-  (let [sql-map {:update :file
-                 :set file-data
-                 :where [:= :id file-id]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:update :file
+                        :set file-data
+                        :where [:= :id file-id]
+                        :returning [:*]}))
 
 (defn delete-file
   "Deletes a file by its ID.
 
-   Returns the number of rows deleted (0 or 1)."
+   Returns Result<{:next.jdbc/update-count n}> - update count or Failure."
   [conn file-id]
-  (let [sql-map {:delete-from :file
-                 :where [:= :id file-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:delete-from :file
+                        :where [:= :id file-id]}))

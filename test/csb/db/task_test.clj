@@ -5,7 +5,8 @@
    [csb.test-helpers :as test-helper]
    [csb.db :as db]
    [csb.db.task :as db.task]
-   [csb.db.plan :as db.plan]))
+   [csb.db.plan :as db.plan]
+   [failjure.core :as f]))
 
 (t/use-fixtures :each test-helper/use-sqlite-database)
 
@@ -348,24 +349,26 @@
 (t/deftest test-invalid-plan-reference
   (t/testing "Creating a task with invalid plan_id should fail"
     (db/execute-one test-helper/*connection* {:raw "PRAGMA foreign_keys = ON"})
-    (t/is (thrown? org.sqlite.SQLiteException
-                   (db.task/create-task
-                    test-helper/*connection*
-                    {:plan_id 99999
-                     :name "Invalid Plan Task"
-                     :context "References non-existent plan"})))))
+    (let [result (db.task/create-task
+                  test-helper/*connection*
+                  {:plan_id 99999
+                   :name "Invalid Plan Task"
+                   :context "References non-existent plan"})]
+      (t/is (f/failed? result))
+      (t/is (instance? org.sqlite.SQLiteException (f/message result))))))
 
 (t/deftest test-invalid-parent-task-reference
   (t/testing "Creating a task with invalid parent_id should fail"
     (let [plan (create-test-plan)]
       (db/execute-one test-helper/*connection* {:raw "PRAGMA foreign_keys = ON"})
-      (t/is (thrown? org.sqlite.SQLiteException
-                     (db.task/create-task
-                      test-helper/*connection*
-                      {:plan_id (:id plan)
-                       :name "Invalid Parent Task"
-                       :context "References non-existent parent"
-                       :parent_id 99999}))))))
+      (let [result (db.task/create-task
+                    test-helper/*connection*
+                    {:plan_id (:id plan)
+                     :name "Invalid Parent Task"
+                     :context "References non-existent parent"
+                     :parent_id 99999})]
+        (t/is (f/failed? result))
+        (t/is (instance? org.sqlite.SQLiteException (f/message result)))))))
 
 ;; ============================================================================
 ;; Full-Text Search Tests

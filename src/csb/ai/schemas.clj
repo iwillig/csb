@@ -8,8 +8,9 @@
   - Model information (ModelInfo)
   - HTTP requests/responses
   - OpenAPI specifications"
-  (:require [malli.core :as m]
-            [malli.util :as mu]))
+  (:require
+   [malli.core :as m]
+   [malli.util :as mu]))
 
 ;; ============================================================================
 ;; Message Schemas

@@ -1,6 +1,11 @@
 (ns csb.db
-  "Namespace for the major DB databse"
+  "Database layer with Railway-Oriented Programming for error handling.
+   
+   All database operations return Result<T> - either a success value or a Failure.
+   This eliminates exception-based error handling and makes failure paths explicit."
   (:require
+   [csb.db.types :as types]
+   [failjure.core :as f]
    [honey.sql :as honey.sql]
    [next.jdbc :as jdbc]
    [next.jdbc.result-set :as honey.rs]
@@ -112,22 +117,57 @@
     (dotimes [_ migration-count]
       (ragtime-repl/rollback config))))
 
+;; ============================================================================
+;; Railway-Style Database Operations
+;; ============================================================================
+
 (t/ann ^:no-check execute-many
-       (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Seqable a)]))
+       (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (types/Result (t/Seqable a))]))
 
 (t/ann ^:no-check execute-one
-       (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (t/Option a)]))
+       (t/All [a] [SQLiteConnection (t/Map t/Keyword t/Any) :-> (types/Result (t/Option a))]))
 
 (defn execute-many
+  "Execute SQL query returning multiple rows.
+   
+   Returns Result<Seq<a>> - sequence of rows or Failure on database error.
+   
+   Uses f/try* to catch any exceptions and convert them to Failure values,
+   enabling Railway-Oriented error handling throughout the application.
+   
+   Example:
+     (execute-many conn {:select [:*] :from [:project]})
+     => [{:id 1 :name \"Project 1\"} {:id 2 :name \"Project 2\"}]
+     
+     (execute-many conn {:select [:*] :from [:nonexistent]})
+     => #Failure{:message \"no such table: nonexistent\"}"
   [^SQLiteConnection conn sql-map]
-  (jdbc/execute!
-   conn
-   (honey.sql/format sql-map)
-   {:builder-fn honey.rs/as-unqualified-maps}))
+  (f/try*
+   (jdbc/execute!
+    conn
+    (honey.sql/format sql-map)
+    {:builder-fn honey.rs/as-unqualified-maps})))
 
 (defn execute-one
+  "Execute SQL query returning single row.
+   
+   Returns Result<a | nil> - single row, nil if not found, or Failure on error.
+   
+   Uses f/try* to catch any exceptions and convert them to Failure values,
+   enabling Railway-Oriented error handling throughout the application.
+   
+   Example:
+     (execute-one conn {:select [:*] :from [:project] :where [:= :id 1]})
+     => {:id 1 :name \"My Project\"}
+     
+     (execute-one conn {:select [:*] :from [:project] :where [:= :id 999]})
+     => nil
+     
+     (execute-one conn {:select [:*] :from [:nonexistent]})
+     => #Failure{:message \"no such table: nonexistent\"}"
   [^SQLiteConnection conn sql-map]
-  (jdbc/execute-one!
-   conn
-   (honey.sql/format sql-map)
-   {:builder-fn honey.rs/as-unqualified-maps}))
+  (f/try*
+   (jdbc/execute-one!
+    conn
+    (honey.sql/format sql-map)
+    {:builder-fn honey.rs/as-unqualified-maps})))

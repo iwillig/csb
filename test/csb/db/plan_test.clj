@@ -4,7 +4,8 @@
    [clojure.test :as t]
    [csb.test-helpers :as test-helper]
    [csb.db :as db]
-   [csb.db.plan :as db.plan]))
+   [csb.db.plan :as db.plan]
+   [failjure.core :as f]))
 
 (t/use-fixtures :each test-helper/use-sqlite-database)
 
@@ -270,23 +271,25 @@
   (t/testing "Creating a plan with invalid plan_state_id should fail"
     ;; Enable foreign key constraints
     (db/execute-one test-helper/*connection* {:raw "PRAGMA foreign_keys = ON"})
-    (t/is (thrown? org.sqlite.SQLiteException
-                   (db.plan/create-plan
-                    test-helper/*connection*
-                    {:name "Invalid State Plan"
-                     :context "Uses non-existent state"
-                     :plan_state_id "non-existent-state"})))))
+    (let [result (db.plan/create-plan
+                  test-helper/*connection*
+                  {:name "Invalid State Plan"
+                   :context "Uses non-existent state"
+                   :plan_state_id "non-existent-state"})]
+      (t/is (f/failed? result))
+      (t/is (instance? org.sqlite.SQLiteException (f/message result))))))
 
 (t/deftest test-invalid-project-reference
   (t/testing "Creating a plan with invalid project_id should fail"
     ;; Enable foreign key constraints
     (db/execute-one test-helper/*connection* {:raw "PRAGMA foreign_keys = ON"})
-    (t/is (thrown? org.sqlite.SQLiteException
-                   (db.plan/create-plan
-                    test-helper/*connection*
-                    {:name "Invalid Project Plan"
-                     :context "References non-existent project"
-                     :project_id 99999})))))
+    (let [result (db.plan/create-plan
+                  test-helper/*connection*
+                  {:name "Invalid Project Plan"
+                   :context "References non-existent project"
+                   :project_id 99999})]
+      (t/is (f/failed? result))
+      (t/is (instance? org.sqlite.SQLiteException (f/message result))))))
 
 (t/deftest test-plan-states-are-prepopulated
   (t/testing "Verify all expected plan states exist"

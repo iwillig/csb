@@ -3,10 +3,11 @@
   
   Provides validation functions that bridge Malli schemas to Failjure Results.
   All validation functions return Result<T> - either the validated value or a Failure."
-  (:require [failjure.core :as f]
-            [malli.core :as m]
-            [malli.error :as me]
-            [csb.ai.schemas :as schemas]))
+  (:require
+   [csb.ai.schemas :as schemas]
+   [failjure.core :as f]
+   [malli.core :as m]
+   [malli.error :as me]))
 
 ;; ============================================================================
 ;; Core Railway Validation
@@ -274,12 +275,12 @@
     => #Failure{...} (if any invalid)"
   [results]
   (reduce
-    (fn [acc result]
-      (if (f/failed? result)
-        (reduced result)  ; Short-circuit on first failure
-        (conj acc result)))
-    []
-    results))
+   (fn [acc result]
+     (if (f/failed? result)
+       (reduced result)  ;; Short-circuit on first failure
+       (conj acc result)))
+   []
+   results))
 
 ;; ============================================================================
 ;; Conditional Validation

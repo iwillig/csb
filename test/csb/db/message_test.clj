@@ -5,7 +5,8 @@
    [csb.test-helpers :as test-helper]
    [csb.db :as db]
    [csb.db.message :as db.message]
-   [csb.db.conversation :as db.conversation]))
+   [csb.db.conversation :as db.conversation]
+   [failjure.core :as f]))
 
 (t/use-fixtures :each test-helper/use-sqlite-database)
 
@@ -236,22 +237,24 @@
 (t/deftest test-invalid-conversation-reference
   (t/testing "Creating a message with invalid conversation_id should fail"
     (db/execute-one test-helper/*connection* {:raw "PRAGMA foreign_keys = ON"})
-    (t/is (thrown? org.sqlite.SQLiteException
-                   (db.message/create-message
-                    test-helper/*connection*
-                    {:conversation_id 99999
-                     :role "user"
-                     :content "Invalid conversation"})))))
+    (let [result (db.message/create-message
+                  test-helper/*connection*
+                  {:conversation_id 99999
+                   :role "user"
+                   :content "Invalid conversation"})]
+      (t/is (f/failed? result))
+      (t/is (instance? org.sqlite.SQLiteException (f/message result))))))
 
 (t/deftest test-invalid-role-value
   (t/testing "Creating a message with invalid role should fail"
-    (let [conversation (create-test-conversation)]
-      (t/is (thrown? org.sqlite.SQLiteException
-                     (db.message/create-message
-                      test-helper/*connection*
-                      {:conversation_id (:id conversation)
-                       :role "invalid-role"
-                       :content "This should fail"}))))))
+    (let [conversation (create-test-conversation)
+          result (db.message/create-message
+                  test-helper/*connection*
+                  {:conversation_id (:id conversation)
+                   :role "invalid-role"
+                   :content "This should fail"})]
+      (t/is (f/failed? result))
+      (t/is (instance? org.sqlite.SQLiteException (f/message result))))))
 
 (t/deftest test-cascade-delete-on-conversation
   (t/testing "Deleting a conversation deletes all its messages"

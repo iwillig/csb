@@ -1,7 +1,11 @@
 (ns csb.db.skill
-  "Database operations for skill entities"
+  "Database operations for skill entities.
+   
+   All operations return Result<T> for Railway-Oriented error handling.
+   Failures propagate automatically through attempt-all pipelines."
   (:require
    [csb.db :as db]
+   [csb.db.types :as types]
    [typed.clojure :as t])
   (:import
    (org.sqlite
@@ -52,22 +56,22 @@
 ;; ============================================================================
 
 (t/ann ^:no-check create-skill
-       [SQLiteConnection NewSkill :-> Skill])
+       [SQLiteConnection NewSkill :-> (types/Result Skill)])
 
-(t/ann get-skill-by-id
-       [SQLiteConnection t/Int :-> (t/Option Skill)])
+(t/ann ^:no-check get-skill-by-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Option Skill))])
 
-(t/ann get-skill-by-name
-       [SQLiteConnection t/Str :-> (t/Option Skill)])
+(t/ann ^:no-check get-skill-by-name
+       [SQLiteConnection t/Str :-> (types/Result (t/Option Skill))])
 
-(t/ann get-all-skills
-       [SQLiteConnection :-> (t/Seqable Skill)])
+(t/ann ^:no-check get-all-skills
+       [SQLiteConnection :-> (types/Result (t/Seqable Skill))])
 
 (t/ann ^:no-check update-skill
-       [SQLiteConnection t/Int SkillUpdate :-> Skill])
+       [SQLiteConnection t/Int SkillUpdate :-> (types/Result Skill)])
 
-(t/ann delete-skill
-       [SQLiteConnection t/Int :-> t/Any])
+(t/ann ^:no-check delete-skill
+       [SQLiteConnection t/Int :-> (types/Result t/Any)])
 
 ;; ============================================================================
 ;; CRUD Operations
@@ -81,42 +85,38 @@
    - :content (required) - Full skill content/documentation
    - :description (optional) - Brief description
 
-   Returns the complete Skill record with generated ID and timestamps."
+   Returns Result<Skill> - the created record or Failure on database error."
   [conn skill-data]
-  (let [sql-map {:insert-into :plan_skill
-                 :values [skill-data]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:insert-into :plan_skill
+                        :values [skill-data]
+                        :returning [:*]}))
 
 (defn get-skill-by-id
   "Retrieves a skill by its ID.
 
-   Returns the Skill record if found, nil otherwise."
+   Returns Result<Skill | nil> - the record, nil if not found, or Failure."
   [conn skill-id]
-  (let [sql-map {:select [:*]
-                 :from [:plan_skill]
-                 :where [:= :id skill-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:select [:*]
+                        :from [:plan_skill]
+                        :where [:= :id skill-id]}))
 
 (defn get-skill-by-name
   "Retrieves a skill by its name.
 
-   Returns the Skill record if found, nil otherwise."
+   Returns Result<Skill | nil> - the record, nil if not found, or Failure."
   [conn skill-name]
-  (let [sql-map {:select [:*]
-                 :from [:plan_skill]
-                 :where [:= :name skill-name]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:select [:*]
+                        :from [:plan_skill]
+                        :where [:= :name skill-name]}))
 
 (defn get-all-skills
   "Retrieves all skills.
 
-   Returns a sequence of Skill records ordered by name."
+   Returns Result<Seq<Skill>> - sequence of records or Failure."
   [conn]
-  (let [sql-map {:select [:*]
-                 :from [:plan_skill]
-                 :order-by [[:name :asc]]}]
-    (db/execute-many conn sql-map)))
+  (db/execute-many conn {:select [:*]
+                         :from [:plan_skill]
+                         :order-by [[:name :asc]]}))
 
 (defn update-skill
   "Updates an existing skill and returns the updated record.
@@ -126,19 +126,17 @@
    - :content - New content
    - :description - New description
 
-   Returns the updated Skill record with new timestamp."
+   Returns Result<Skill> - the updated record or Failure."
   [conn skill-id skill-data]
-  (let [sql-map {:update :plan_skill
-                 :set skill-data
-                 :where [:= :id skill-id]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:update :plan_skill
+                        :set skill-data
+                        :where [:= :id skill-id]
+                        :returning [:*]}))
 
 (defn delete-skill
   "Deletes a skill by its ID.
 
-   Returns the number of rows deleted (0 or 1)."
+   Returns Result<{:next.jdbc/update-count n}> - update count or Failure."
   [conn skill-id]
-  (let [sql-map {:delete-from :plan_skill
-                 :where [:= :id skill-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:delete-from :plan_skill
+                        :where [:= :id skill-id]}))

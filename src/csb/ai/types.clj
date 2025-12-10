@@ -3,8 +3,9 @@
   
   Uses Typed Clojure for static type checking and documentation.
   All fallible operations return Result<T> = T | Failure."
-  (:require [typed.clojure :as t]
-            [failjure.core :as f]))
+  (:require
+   [failjure.core :as f]
+   [typed.clojure :as t]))
 
 ;; ============================================================================
 ;; Railway Result Type

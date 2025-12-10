@@ -1,7 +1,12 @@
 (ns csb.db.plan-skill
-  "Database operations for plan skill entities"
+  "Database operations for plan skill entities.
+   
+   All functions return Result types - either the success value or a Failure.
+   Use failjure.core/failed? to check for failures."
   (:require
    [csb.db :as db]
+   [csb.db.types :as types]
+   [failjure.core :as f]
    [next.jdbc :as jdbc]
    [next.jdbc.result-set :as rs]
    [typed.clojure :as t])
@@ -54,25 +59,25 @@
 ;; ============================================================================
 
 (t/ann ^:no-check create-plan-skill
-       [SQLiteConnection NewPlanSkill :-> PlanSkill])
+       [SQLiteConnection NewPlanSkill :-> (types/Result PlanSkill)])
 
 (t/ann ^:no-check get-plan-skill-by-id
-       [SQLiteConnection t/Int :-> (t/Option PlanSkill)])
+       [SQLiteConnection t/Int :-> (types/Result (t/Option PlanSkill))])
 
 (t/ann ^:no-check get-plan-skill-by-name
-       [SQLiteConnection t/Str :-> (t/Option PlanSkill)])
+       [SQLiteConnection t/Str :-> (types/Result (t/Option PlanSkill))])
 
 (t/ann ^:no-check get-all-plan-skills
-       [SQLiteConnection :-> (t/Seqable PlanSkill)])
+       [SQLiteConnection :-> (types/Result (t/Seqable PlanSkill))])
 
 (t/ann ^:no-check search-plan-skills
-       [SQLiteConnection t/Str :-> (t/Seqable PlanSkill)])
+       [SQLiteConnection t/Str :-> (types/Result (t/Seqable PlanSkill))])
 
 (t/ann ^:no-check update-plan-skill
-       [SQLiteConnection t/Int PlanSkillUpdate :-> PlanSkill])
+       [SQLiteConnection t/Int PlanSkillUpdate :-> (types/Result PlanSkill)])
 
 (t/ann ^:no-check delete-plan-skill
-       [SQLiteConnection t/Int :-> t/Any])
+       [SQLiteConnection t/Int :-> (types/Result t/Any)])
 
 ;; ============================================================================
 ;; CRUD Operations
@@ -86,7 +91,8 @@
   - :content (required) - Full skill content/documentation
   - :description (optional) - Brief description
 
-  Returns the complete PlanSkill record with generated ID and timestamps."
+  Returns Result<PlanSkill> - the complete PlanSkill record with generated ID 
+  and timestamps, or a Failure on database error."
   [conn skill-data]
   (let [sql-map {:insert-into :plan_skill
                  :values [skill-data]
@@ -96,7 +102,8 @@
 (defn get-plan-skill-by-id
   "Retrieves a plan skill by its ID.
 
-  Returns the PlanSkill record if found, nil otherwise."
+  Returns Result<PlanSkill | nil> - the PlanSkill record if found, nil if not 
+  found, or a Failure on database error."
   [conn skill-id]
   (let [sql-map {:select [:*]
                  :from [:plan_skill]
@@ -106,7 +113,8 @@
 (defn get-plan-skill-by-name
   "Retrieves a plan skill by its name.
 
-  Returns the PlanSkill record if found, nil otherwise."
+  Returns Result<PlanSkill | nil> - the PlanSkill record if found, nil if not 
+  found, or a Failure on database error."
   [conn skill-name]
   (let [sql-map {:select [:*]
                  :from [:plan_skill]
@@ -116,7 +124,8 @@
 (defn get-all-plan-skills
   "Retrieves all plan skills.
 
-  Returns a sequence of PlanSkill records ordered by name."
+  Returns Result<Seq<PlanSkill>> - a sequence of PlanSkill records ordered by 
+  name, or a Failure on database error."
   [conn]
   (let [sql-map {:select [:*]
                  :from [:plan_skill]
@@ -126,16 +135,19 @@
 (defn search-plan-skills
   "Searches plan skills using full-text search on content.
 
-  Returns a sequence of PlanSkill records matching the search query."
+  Returns Result<Seq<PlanSkill>> - a sequence of PlanSkill records matching 
+  the search query, or a Failure on database error."
   [conn search-query]
   ;; Use next.jdbc directly for parameterized raw SQL
-  (jdbc/execute!
-   conn
-   ["SELECT plan_skill.* FROM plan_skill 
-     JOIN plan_skill_fts ON plan_skill.id = plan_skill_fts.rowid 
-     WHERE plan_skill_fts MATCH ? 
-     ORDER BY rank" search-query]
-   {:builder-fn rs/as-unqualified-maps}))
+  ;; Wrapped in f/try* for Railway-style error handling
+  (f/try*
+   (jdbc/execute!
+    conn
+    ["SELECT plan_skill.* FROM plan_skill 
+      JOIN plan_skill_fts ON plan_skill.id = plan_skill_fts.rowid 
+      WHERE plan_skill_fts MATCH ? 
+      ORDER BY rank" search-query]
+    {:builder-fn rs/as-unqualified-maps})))
 
 (defn update-plan-skill
   "Updates an existing plan skill and returns the updated record.
@@ -145,7 +157,8 @@
   - :content - New content
   - :description - New description
 
-  Returns the updated PlanSkill record with new timestamp."
+  Returns Result<PlanSkill> - the updated PlanSkill record with new timestamp,
+  or a Failure on database error."
   [conn skill-id skill-data]
   (let [sql-map {:update :plan_skill
                  :set skill-data
@@ -156,10 +169,11 @@
 (defn delete-plan-skill
   "Deletes a plan skill by its ID.
 
-  Note: This will fail if the skill is referenced by any plans
+  Note: This will return a Failure if the skill is referenced by any plans
   (via plan_skills junction table) due to foreign key constraints.
 
-  Returns the number of rows deleted (0 or 1)."
+  Returns Result<Any> - the deletion result with update count, or a Failure 
+  on database error."
   [conn skill-id]
   (let [sql-map {:delete-from :plan_skill
                  :where [:= :id skill-id]}]

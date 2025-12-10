@@ -4,7 +4,8 @@
    [clojure.test :as t]
    [csb.test-helpers :as test-helper]
    [csb.db :as db]
-   [csb.db.conversation :as db.conversation]))
+   [csb.db.conversation :as db.conversation]
+   [failjure.core :as f]))
 
 (t/use-fixtures :each test-helper/use-sqlite-database)
 
@@ -174,7 +175,8 @@
 (t/deftest test-invalid-project-reference
   (t/testing "Creating a conversation with invalid project_id should fail"
     (db/execute-one test-helper/*connection* {:raw "PRAGMA foreign_keys = ON"})
-    (t/is (thrown? org.sqlite.SQLiteException
-                   (db.conversation/create-conversation
-                    test-helper/*connection*
-                    {:project_id 99999})))))
+    (let [result (db.conversation/create-conversation
+                  test-helper/*connection*
+                  {:project_id 99999})]
+      (t/is (f/failed? result))
+      (t/is (instance? org.sqlite.SQLiteException (f/message result))))))

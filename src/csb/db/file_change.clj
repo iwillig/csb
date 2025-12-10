@@ -1,7 +1,11 @@
 (ns csb.db.file-change
-  "Database operations for file change entities"
+  "Database operations for file change entities.
+   
+   All operations return Result<T> for Railway-Oriented error handling.
+   Failures propagate automatically through attempt-all pipelines."
   (:require
    [csb.db :as db]
+   [csb.db.types :as types]
    [typed.clojure :as t])
   (:import
    (org.sqlite
@@ -84,16 +88,16 @@
 ;; ============================================================================
 
 (t/ann ^:no-check create-file-change
-       [SQLiteConnection NewFileChange :-> FileChange])
+       [SQLiteConnection NewFileChange :-> (types/Result FileChange)])
 
-(t/ann get-file-change-by-id
-       [SQLiteConnection t/Int :-> (t/Option FileChange)])
+(t/ann ^:no-check get-file-change-by-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Option FileChange))])
 
-(t/ann get-file-changes-by-plan-id
-       [SQLiteConnection t/Int :-> (t/Seqable FileChange)])
+(t/ann ^:no-check get-file-changes-by-plan-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Seqable FileChange))])
 
-(t/ann get-file-changes-by-file-id
-       [SQLiteConnection t/Int :-> (t/Seqable FileChange)])
+(t/ann ^:no-check get-file-changes-by-file-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Seqable FileChange))])
 
 (t/ann ^:no-check create-file-change-change
        [SQLiteConnection (t/HMap :mandatory {:file_change_id t/Int
@@ -101,23 +105,23 @@
                                              :line_start t/Int
                                              :line_end t/Int}
                                  :optional {:change_content (t/Option t/Str)})
-        :-> FileChangeChange])
+        :-> (types/Result FileChangeChange)])
 
-(t/ann get-file-change-changes-by-file-change-id
-       [SQLiteConnection t/Int :-> (t/Seqable FileChangeChange)])
+(t/ann ^:no-check get-file-change-changes-by-file-change-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Seqable FileChangeChange))])
 
 (t/ann ^:no-check create-file-change-application
        [SQLiteConnection (t/HMap :mandatory {:file_change_id t/Int
                                              :plan_id t/Int
                                              :status t/Str}
                                  :optional {:result_message (t/Option t/Str)})
-        :-> FileChangeApplication])
+        :-> (types/Result FileChangeApplication)])
 
-(t/ann get-file-change-application-by-file-change-id
-       [SQLiteConnection t/Int :-> (t/Option FileChangeApplication)])
+(t/ann ^:no-check get-file-change-application-by-file-change-id
+       [SQLiteConnection t/Int :-> (types/Result (t/Option FileChangeApplication))])
 
 (t/ann ^:no-check update-file-change-application-status
-       [SQLiteConnection t/Int t/Str (t/Option t/Str) :-> FileChangeApplication])
+       [SQLiteConnection t/Int t/Str (t/Option t/Str) :-> (types/Result FileChangeApplication)])
 
 ;; ============================================================================
 ;; CRUD Operations
@@ -130,44 +134,40 @@
    - :plan_id (required) - Associated plan ID
    - :file_id (required) - File being changed
 
-   Returns the complete FileChange record with generated ID and timestamps."
+   Returns Result<FileChange> - the created record or Failure on database error."
   [conn file-change-data]
-  (let [sql-map {:insert-into :file_change
-                 :values [file-change-data]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:insert-into :file_change
+                        :values [file-change-data]
+                        :returning [:*]}))
 
 (defn get-file-change-by-id
   "Retrieves a file change by its ID.
 
-   Returns the FileChange record if found, nil otherwise."
+   Returns Result<FileChange | nil> - the record, nil if not found, or Failure."
   [conn file-change-id]
-  (let [sql-map {:select [:*]
-                 :from [:file_change]
-                 :where [:= :id file-change-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:select [:*]
+                        :from [:file_change]
+                        :where [:= :id file-change-id]}))
 
 (defn get-file-changes-by-plan-id
   "Retrieves all file changes associated with a plan.
 
-   Returns a sequence of FileChange records ordered by creation time."
+   Returns Result<Seq<FileChange>> - sequence of records or Failure."
   [conn plan-id]
-  (let [sql-map {:select [:*]
-                 :from [:file_change]
-                 :where [:= :plan_id plan-id]
-                 :order-by [[:created_at :asc]]}]
-    (db/execute-many conn sql-map)))
+  (db/execute-many conn {:select [:*]
+                         :from [:file_change]
+                         :where [:= :plan_id plan-id]
+                         :order-by [[:created_at :asc]]}))
 
 (defn get-file-changes-by-file-id
   "Retrieves all file changes associated with a file.
 
-   Returns a sequence of FileChange records ordered by creation time."
+   Returns Result<Seq<FileChange>> - sequence of records or Failure."
   [conn file-id]
-  (let [sql-map {:select [:*]
-                 :from [:file_change]
-                 :where [:= :file_id file-id]
-                 :order-by [[:created_at :asc]]}]
-    (db/execute-many conn sql-map)))
+  (db/execute-many conn {:select [:*]
+                         :from [:file_change]
+                         :where [:= :file_id file-id]
+                         :order-by [[:created_at :asc]]}))
 
 (defn create-file-change-change
   "Creates a new file change change (addition, removal, or update) and returns it.
@@ -179,23 +179,21 @@
    - :line_end (required) - Ending line number
    - :change_content (optional) - The actual change content
 
-   Returns the FileChangeChange record with generated ID and timestamps."
+   Returns Result<FileChangeChange> - the created record or Failure."
   [conn change-data]
-  (let [sql-map {:insert-into :file_change_change
-                 :values [change-data]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:insert-into :file_change_change
+                        :values [change-data]
+                        :returning [:*]}))
 
 (defn get-file-change-changes-by-file-change-id
   "Retrieves all changes associated with a file change.
 
-   Returns a sequence of FileChangeChange records ordered by line numbers."
+   Returns Result<Seq<FileChangeChange>> - sequence of records or Failure."
   [conn file-change-id]
-  (let [sql-map {:select [:*]
-                 :from [:file_change_change]
-                 :where [:= :file_change_id file-change-id]
-                 :order-by [[:line_start :asc]]}]
-    (db/execute-many conn sql-map)))
+  (db/execute-many conn {:select [:*]
+                         :from [:file_change_change]
+                         :where [:= :file_change_id file-change-id]
+                         :order-by [[:line_start :asc]]}))
 
 (defn create-file-change-application
   "Creates a new file change application status and returns it.
@@ -206,31 +204,28 @@
    - :status (required) - Status: 'pending', 'applied', or 'failed'
    - :result_message (optional) - Details about the application result
 
-   Returns the FileChangeApplication record with generated ID and timestamps."
+   Returns Result<FileChangeApplication> - the created record or Failure."
   [conn application-data]
-  (let [sql-map {:insert-into :file_change_application
-                 :values [application-data]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:insert-into :file_change_application
+                        :values [application-data]
+                        :returning [:*]}))
 
 (defn get-file-change-application-by-file-change-id
   "Retrieves the application status for a file change.
 
-   Returns the FileChangeApplication record if found, nil otherwise."
+   Returns Result<FileChangeApplication | nil> - the record, nil if not found, or Failure."
   [conn file-change-id]
-  (let [sql-map {:select [:*]
-                 :from [:file_change_application]
-                 :where [:= :file_change_id file-change-id]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:select [:*]
+                        :from [:file_change_application]
+                        :where [:= :file_change_id file-change-id]}))
 
 (defn update-file-change-application-status
   "Updates the status of a file change application.
 
-   Returns the updated FileChangeApplication record."
+   Returns Result<FileChangeApplication> - the updated record or Failure."
   [conn file-change-application-id status result-message]
-  (let [sql-map {:update :file_change_application
-                 :set {:status status
-                       :result_message result-message}
-                 :where [:= :id file-change-application-id]
-                 :returning [:*]}]
-    (db/execute-one conn sql-map)))
+  (db/execute-one conn {:update :file_change_application
+                        :set {:status status
+                              :result_message result-message}
+                        :where [:= :id file-change-application-id]
+                        :returning [:*]}))
